@@ -27,7 +27,7 @@ npm install
 Create a `.env` file to store your MongoDB connection details (optional):
 
 ```
-MONGODB_URI=mongodb://localhost:27017
+MONGO_URL=mongodb://localhost:27017
 ```
 
 ## Usage
@@ -35,7 +35,7 @@ MONGODB_URI=mongodb://localhost:27017
 ### Starting the Server
 
 ```bash
-node index.js
+node index.ts
 ```
 
 ### Available Tools
