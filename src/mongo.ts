@@ -19,9 +19,9 @@
 // connect().catch(console.dir);
 import { MongoClient, Db } from 'mongodb';
 import type { IndexDirection, InsertOneResult, InsertManyResult, DeleteResult, UpdateResult, Document } from 'mongodb';
+import 'dotenv/config';
 
-const uri =
-  "mongodb+srv://ekarshasumajkotikalapoodi:kvljvnlkeskos@cluster0.8lierja.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 
 let client: MongoClient | null = null;
 
