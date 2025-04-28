@@ -15,7 +15,7 @@ This MCP server provides a standardized interface for AI models to perform Mongo
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mcp-mongo.git
+git clone (https://github.com/EKarshaSumajK/MCP-MONGO.git)
 cd mcp-mongo
 
 # Install dependencies
