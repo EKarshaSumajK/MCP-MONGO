@@ -5,12 +5,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "type": "module",
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
+    "dotenv": "^16.5.0",
     "mongodb": "6.16",
+    "process": "^0.11.10",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3"
   }
 }
