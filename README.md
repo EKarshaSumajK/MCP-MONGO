@@ -3,6 +3,7 @@
 A Model Context Protocol (MCP) server implementation that enables AI models to interact with MongoDB databases.
 
 ## Overview
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/EKarshaSumajK/MCP-MONGO)
 
 This MCP server provides a standardized interface for AI models to perform MongoDB operations, including:
 
