@@ -18,7 +18,24 @@ import {
   dropCollection,
   createDatabase,
   dropDatabase,
-  closeConnection
+  closeConnection,
+  // New imports for additional MongoDB functionalities
+  group,
+  project,
+  sort,
+  limit,
+  skip,
+  lookup,
+  dropIndex,
+  listDatabases,
+  createUser,
+  updateUser,
+  removeUser,
+  grantRolesToUser,
+  findWithOptions,
+  findOneAndUpdate,
+  findOneAndDelete,
+  bulkWrite
 } from "./src/mongo.ts";
 
 // Create an MCP server
@@ -246,3 +263,248 @@ const transport = new StdioServerTransport();
 await server.connect(transport);
 
 console.error(JSON.stringify({ error: "Connection failed" }));
+
+// Tool to project fields
+server.tool("project-fields",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    projection: z.object({}).passthrough()
+  },
+  async ({ url, db, collection, projection }) => {
+    const result = await project(db, collection, projection, url);
+    return {
+      content: [{ type: "text", text: `Projection result: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to sort documents
+server.tool("sort-documents",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    sortSpec: z.object({}).passthrough()
+  },
+  async ({ url, db, collection, sortSpec }) => {
+    const result = await sort(db, collection, sortSpec, url);
+    return {
+      content: [{ type: "text", text: `Sorted documents: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to limit documents
+server.tool("limit-documents",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    limitCount: z.number()
+  },
+  async ({ url, db, collection, limitCount }) => {
+    const result = await limit(db, collection, limitCount, url);
+    return {
+      content: [{ type: "text", text: `Limited documents: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to skip documents
+server.tool("skip-documents",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    skipCount: z.number()
+  },
+  async ({ url, db, collection, skipCount }) => {
+    const result = await skip(db, collection, skipCount, url);
+    return {
+      content: [{ type: "text", text: `Documents after skipping: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to perform lookup (join)
+server.tool("lookup-documents",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    fromCollection: z.string(),
+    localField: z.string(),
+    foreignField: z.string(),
+    as: z.string()
+  },
+  async ({ url, db, collection, fromCollection, localField, foreignField, as }) => {
+    const result = await lookup(db, collection, fromCollection, localField, foreignField, as, url);
+    return {
+      content: [{ type: "text", text: `Lookup result: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to drop an index
+server.tool("drop-index",
+  { 
+    url: z.string().optional(), 
+    db: z.string(), 
+    collection: z.string(),
+    indexName: z.string()
+  },
+  async ({ url, db, collection, indexName }) => {
+    const result = await dropIndex(db, collection, indexName, url);
+    return {
+      content: [{ type: "text", text: `Index "${indexName}" dropped successfully.` }]
+    };
+  }
+);
+
+// Tool to list all databases
+server.tool("list-databases",
+  { 
+    url: z.string().optional()
+  },
+  async ({ url }) => {
+    const databases = await listDatabases(url);
+    return {
+      content: [{ type: "text", text: `Available databases: ${databases.join(", ")}` }]
+    };
+  }
+);
+
+// Tool to create a user
+server.tool("create-user",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    username: z.string(),
+    password: z.string(),
+    roles: z.array(z.object({}).passthrough())
+  },
+  async ({ url, db, username, password, roles }) => {
+    const result = await createUser(db, username, password, roles, url);
+    return {
+      content: [{ type: "text", text: `User "${username}" created successfully.` }]
+    };
+  }
+);
+
+// Tool to update a user
+server.tool("update-user",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    username: z.string(),
+    userData: z.object({}).passthrough()
+  },
+  async ({ url, db, username, userData }) => {
+    const result = await updateUser(db, username, userData, url);
+    return {
+      content: [{ type: "text", text: `User "${username}" updated successfully.` }]
+    };
+  }
+);
+
+// Tool to remove a user
+server.tool("remove-user",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    username: z.string()
+  },
+  async ({ url, db, username }) => {
+    const result = await removeUser(db, username, url);
+    return {
+      content: [{ type: "text", text: `User "${username}" removed successfully.` }]
+    };
+  }
+);
+
+// Tool to grant roles to a user
+server.tool("grant-roles",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    username: z.string(),
+    roles: z.array(z.object({}).passthrough())
+  },
+  async ({ url, db, username, roles }) => {
+    const result = await grantRolesToUser(db, username, roles, url);
+    return {
+      content: [{ type: "text", text: `Roles granted to user "${username}" successfully.` }]
+    };
+  }
+);
+
+// Tool to find documents with options
+server.tool("find-with-options",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    collection: z.string(),
+    query: z.object({}).passthrough(),
+    options: z.object({}).passthrough()
+  },
+  async ({ url, db, collection, query, options }) => {
+    const result = await findWithOptions(db, collection, query, options, url);
+    return {
+      content: [{ type: "text", text: `Found documents: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to find one document and update it
+server.tool("find-one-and-update",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    collection: z.string(),
+    filter: z.object({}).passthrough(),
+    update: z.object({}).passthrough(),
+    options: z.object({}).passthrough().optional()
+  },
+  async ({ url, db, collection, filter, update, options = { returnDocument: 'after' } }) => {
+    const result = await findOneAndUpdate(db, collection, filter, update, options, url);
+    return {
+      content: [{ type: "text", text: `Updated document: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to find one document and delete it
+server.tool("find-one-and-delete",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    collection: z.string(),
+    filter: z.object({}).passthrough(),
+    options: z.object({}).passthrough().optional()
+  },
+  async ({ url, db, collection, filter, options = {} }) => {
+    const result = await findOneAndDelete(db, collection, filter, options, url);
+    return {
+      content: [{ type: "text", text: `Deleted document: ${JSON.stringify(result)}` }]
+    };
+  }
+);
+
+// Tool to perform bulk write operations
+server.tool("bulk-write",
+  { 
+    url: z.string().optional(), 
+    db: z.string(),
+    collection: z.string(),
+    operations: z.array(z.object({}).passthrough()),
+    options: z.object({}).passthrough().optional()
+  },
+  async ({ url, db, collection, operations, options = {} }) => {
+    const result = await bulkWrite(db, collection, operations, options, url);
+    return {
+      content: [{ type: "text", text: `Bulk write result: ${JSON.stringify(result)}` }]
+    };
+  }
+);
