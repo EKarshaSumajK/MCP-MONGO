@@ -1,5 +1,5 @@
-import { MongoClient, Db } from 'mongodb';
-import type { IndexDirection, InsertOneResult, InsertManyResult, DeleteResult, UpdateResult, Document } from 'mongodb';
+import { MongoClient, Db, Sort, FindOptions } from 'mongodb';
+import type { IndexDirection, InsertOneResult, InsertManyResult, DeleteResult, UpdateResult, Document, AnyBulkWriteOperation } from 'mongodb';
 import 'dotenv/config';
 
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
@@ -393,6 +393,350 @@ export async function dropDatabase(
     return result;
   } catch (error) {
     console.error(`Error dropping database "${dbName}":`, error);
+    throw error;
+  }
+}
+
+// Additional aggregation operations
+export async function group(
+  dbName: string,
+  collectionName: string,
+  groupKey: string,
+  accumulationOperator: string,
+  accumulationField: string,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const pipeline = [
+      { $group: { _id: `$${groupKey}`, result: { [`$${accumulationOperator}`]: `$${accumulationField}` } } }
+    ];
+    const result = await collection.aggregate(pipeline).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error performing group operation:", error);
+    throw error;
+  }
+}
+
+export async function project(
+  dbName: string,
+  collectionName: string,
+  projection: Document,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const pipeline = [{ $project: projection }];
+    const result = await collection.aggregate(pipeline).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error performing projection:", error);
+    throw error;
+  }
+}
+
+export async function sort(
+  dbName: string,
+  collectionName: string,
+  sortSpec: Document,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.find({}).sort(sortSpec as Sort).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error sorting documents:", error);
+    throw error;
+  }
+}
+
+export async function limit(
+  dbName: string,
+  collectionName: string,
+  limitCount: number,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.find({}).limit(limitCount).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error limiting documents:", error);
+    throw error;
+  }
+}
+
+export async function skip(
+  dbName: string,
+  collectionName: string,
+  skipCount: number,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.find({}).skip(skipCount).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error skipping documents:", error);
+    throw error;
+  }
+}
+
+export async function lookup(
+  dbName: string,
+  collectionName: string,
+  fromCollection: string,
+  localField: string,
+  foreignField: string,
+  as: string,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const pipeline = [
+      {
+        $lookup: {
+          from: fromCollection,
+          localField: localField,
+          foreignField: foreignField,
+          as: as
+        }
+      }
+    ];
+    const result = await collection.aggregate(pipeline).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error performing lookup:", error);
+    throw error;
+  }
+}
+
+// Drop index function
+export async function dropIndex(
+  dbName: string,
+  collectionName: string,
+  indexName: string,
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.dropIndex(indexName);
+    return result;
+  } catch (error) {
+    console.error("Error dropping index:", error);
+    throw error;
+  }
+}
+
+// List all databases
+export async function listDatabases(url: string = uri): Promise<string[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const databasesList = await client!.db().admin().listDatabases();
+    return databasesList.databases.map((db: any) => db.name);
+  } catch (error) {
+    console.error("Error listing databases:", error);
+    throw error;
+  }
+}
+
+// Authentication and Authorization functions
+export async function createUser(
+  dbName: string,
+  username: string,
+  password: string,
+  roles: Document[],
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const result = await db.command({ createUser: username, pwd: password, roles: roles });
+    console.log(`User "${username}" created successfully.`);
+    return result;
+  } catch (error) {
+    console.error(`Error creating user "${username}":`, error);
+    throw error;
+  }
+}
+
+export async function updateUser(
+  dbName: string,
+  username: string,
+  userData: Document,
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const command = { updateUser: username, ...userData };
+    const result = await db.command(command);
+    console.log(`User "${username}" updated successfully.`);
+    return result;
+  } catch (error) {
+    console.error(`Error updating user "${username}":`, error);
+    throw error;
+  }
+}
+
+export async function removeUser(
+  dbName: string,
+  username: string,
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const result = await db.removeUser(username);
+    console.log(`User "${username}" removed successfully.`);
+    return result as unknown as Document;
+  } catch (error) {
+    console.error(`Error removing user "${username}":`, error);
+    throw error;
+  }
+}
+
+export async function grantRolesToUser(
+  dbName: string,
+  username: string,
+  roles: Document[],
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const command = { grantRolesToUser: username, roles: roles };
+    const result = await db.command(command);
+    console.log(`Roles granted to user "${username}" successfully.`);
+    return result;
+  } catch (error) {
+    console.error(`Error granting roles to user "${username}":`, error);
+    throw error;
+  }
+}
+
+// Advanced query operations
+export async function findWithOptions(
+  dbName: string,
+  collectionName: string,
+  query: Document,
+  options: FindOptions,
+  url: string = uri
+): Promise<Document[]> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.find(query, options).toArray();
+    return result;
+  } catch (error) {
+    console.error("Error finding documents with options:", error);
+    throw error;
+  }
+}
+
+export async function findOneAndUpdate(
+  dbName: string,
+  collectionName: string,
+  filter: Document,
+  update: Document,
+  options: Document = { returnDocument: 'after' },
+  url: string = uri
+): Promise<Document | null> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.findOneAndUpdate(filter, update, options);
+    return result;
+  } catch (error) {
+    console.error("Error finding and updating document:", error);
+    throw error;
+  }
+}
+
+export async function findOneAndDelete(
+  dbName: string,
+  collectionName: string,
+  filter: Document,
+  options: Document = {},
+  url: string = uri
+): Promise<Document | null> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.findOneAndDelete(filter, options);
+    return result;
+  } catch (error) {
+    console.error("Error finding and deleting document:", error);
+    throw error;
+  }
+}
+
+export async function bulkWrite(
+  dbName: string,
+  collectionName: string,
+  operations: Document[],
+  options: Document = {},
+  url: string = uri
+): Promise<Document> {
+  try {
+    if (!client) {
+      await connect(url);
+    }
+    const db: Db = client!.db(dbName);
+    const collection = db.collection(collectionName);
+    const result = await collection.bulkWrite(operations as AnyBulkWriteOperation<Document>[], options);
+    return result;
+  } catch (error) {
+    console.error("Error performing bulk write operations:", error);
     throw error;
   }
 }
